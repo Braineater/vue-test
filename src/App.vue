@@ -1,18 +1,13 @@
 <template>
   <div id="app">
-    <Reddit msg="Welcome to Reddit news reader" :itemsPerPage="2"/>
+    <router-view></router-view>
   </div>
 </template>
 
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
-import Reddit from './components/Reddit.vue';
 
-@Component({
-  components: {
-    Reddit,
-  },
-})
+@Component
 export default class App extends Vue {}
 </script>
 

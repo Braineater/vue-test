@@ -21,6 +21,12 @@ import { Component, Prop, Vue } from 'vue-property-decorator';
 import axios from "axios"
 import RedditPost from "@/components/reddit-entry/RedditPost.vue";
 
+const TITLE: string = "Vue+Reddit";
+const REDDIT: string = "reddit";
+const BEFORE: string = "before";
+const AFTER: string = "after";
+const COUNT: string = "count";
+
 @Component ({
   components: { RedditPost }
 })
@@ -34,9 +40,21 @@ export default class Reddit extends Vue {
   after: string;
   count: number = 0;
 
-  constructor() {
-    super();
-    this.FetchData("", 0);
+  created() {
+    let query = "";
+
+    if (this.$route.params[COUNT] != null)
+      this.count = parseInt(this.$route.params[COUNT]);
+
+    if (this.$route.params[AFTER] != null) {
+      query = Reddit.AfterQuery(this.$route.params[AFTER], this.count);
+    }
+
+    if (this.$route.params[BEFORE] != null) {
+      query = Reddit.BeforeQuery(this.$route.params[BEFORE], this.count);
+    }
+
+    this.FetchData(query, 0);
   }
 
   FetchData(requestParams: string = "", delay: number = 1000): void {
@@ -74,34 +92,38 @@ export default class Reddit extends Vue {
   GoHome() {
     this.count = 0;
 
-    history.pushState({"before": this.before, "count": this.count}, "Home", "?home");
+    this.$router.push('/' + REDDIT);
+
+    document.title = TITLE;
 
     this.FetchData("");
   }
 
   PreviousClick() {
     let data:string = "";
+    let route:string = '/' + REDDIT;
+    let title: string = TITLE;
     this.count -= this.itemsPerPage;
     if (this.count < 0)
       this.count = 0;
 
-    if (this.before != null && this.count > 0)
-      data = "?before=" + this.before + "&count=" + this.count;
+    if (this.before != null && this.count > 0) {
+      data = Reddit.BeforeQuery(this.before, this.count);
+      route += '/' + BEFORE + '/' + this.before + '/' + COUNT + '/' + this.count;
+      title = TITLE + " - page " + this.PageNumber;
+    }
 
-    history.pushState({"before": this.before, "count": this.count},
-            "Page " + (this.count / this.itemsPerPage), data === "" ? data : "?home");
-
+    document.title = title;
+    this.$router.push(route);
     this.FetchData(data);
   }
 
   NextClick() {
     this.count += this.itemsPerPage;
-    let data = "?after=" + this.after + "&count=" + this.count;
 
-    history.pushState({"after": this.after, "count": this.count},
-            "Page " + (this.count / this.itemsPerPage), data);
-
-    this.FetchData(data);
+    document.title = TITLE + " - page " + this.PageNumber;
+    this.$router.push('/' + REDDIT + '/' + AFTER + '/' + this.after + '/' + COUNT + '/' + this.count);
+    this.FetchData(Reddit.AfterQuery(this.after, this.count));
   }
 
   get BackButttonLabel(): string {
@@ -109,6 +131,18 @@ export default class Reddit extends Vue {
       return "< Previous " + this.itemsPerPage;
 
     return "Refresh";
+  }
+
+  get PageNumber(): number {
+    return (this.count / this.itemsPerPage) + 1;
+  }
+
+  static BeforeQuery(before: string, count: number):string {
+    return "?" + BEFORE + "=" + before + "&" + COUNT + "=" + count;
+  }
+
+  static AfterQuery(after: string, count: number):string {
+    return "?" + AFTER + "=" + after + "&" + COUNT + "=" + count;
   }
 }
 </script>
